@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Apple of Fortune - النسخة المتزامنة</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: radial-gradient(circle at center, #173b2b, #091910);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .game-screen {
+      width: 100%;
+      max-width: 430px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100vh;
+    }
+
+    /* الشريط العلوي */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .wallet {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #fbbf24;
+    }
+
+    .sync-id-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      background: rgba(255,255,255,0.08);
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+
+    .sync-id-box input {
+      width: 90px;
+      background: transparent;
+      border: 1px solid #22c55e;
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 4px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+
+    /* شبكة التفاح */
+    .board-container {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      direction: ltr;
+      opacity: 0.35;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .row.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .row.cleared {
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .cells-wrap {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .cell {
+      flex: 1;
+      aspect-ratio: 1;
+      background: radial-gradient(circle at 35% 35%, #96572a, #522d11);
+      border: 2px solid #3d1f0a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.45rem;
+      cursor: pointer;
+      box-shadow: inset 0 -3px 5px rgba(0,0,0,0.5), 0 3px 6px rgba(0,0,0,0.4);
+      transition: transform 0.1s;
+    }
+
+    .row.active .cell:active {
+      transform: scale(0.92);
+    }
+
+    .cell.good {
+      background: radial-gradient(circle at 35% 35%, #2ecc71, #145a32);
+      border-color: #27ae60;
+      box-shadow: 0 0 10px #2ecc71;
+    }
+
+    .cell.bad {
+      background: radial-gradient(circle at 35% 35%, #e74c3c, #78281f);
+      border-color: #c0392b;
+      box-shadow: 0 0 10px #e74c3c;
+    }
+
+    .multiplier-badge {
+      width: 65px;
+      background: #1b3d2b;
+      color: #6ee7b7;
+      text-align: center;
+      padding: 8px 0;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    /* لوحة التحكم والرهان */
+    .controls-panel {
+      background: #112219;
+      border-radius: 14px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .status-alert {
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: bold;
+      min-height: 22px;
+      color: #a7f3d0;
+    }
+
+    .bet-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bet-input-row input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #1e4633;
+      background: #09150f;
+      color: #fff;
+      font-size: 1.05rem;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .btn-action {
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 1.1rem;
+      font-weight: 900;
+      cursor: pointer;
+      color: #fff;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn-action:active {
+      transform: scale(0.98);
+    }
+
+    .btn-action.start {
+      background: #10b981;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-action.cashout {
+      background: #f59e0b;
+      color: #000;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen">
+    <!-- الرأس -->
+    <div class="top-bar">
+      <div class="wallet">الرصيد: <span id="userBalance">1000.00</span> ج.م</div>
+      <div class="sync-id-box">
+        <span>ربط ID:</span>
+        <input type="text" id="targetId" value="32856808">
+      </div>
+    </div>
+
+    <!-- شبكة اللعب -->
+    <div class="board-container" id="gameGrid"></div>
+
+    <!-- أدوات التحكم والرهان -->
+    <div class="controls-panel">
+      <div class="status-alert" id="statusMessage">اكتب نفس الـ ID واضغط ابدأ الرهان</div>
+
+      <div class="bet-input-row">
+        <span>الرهان:</span>
+        <input type="number" id="stakeInput" value="20" min="5" step="5">
+      </div>
+
+      <button class="btn-action start" id="mainGameBtn" onclick="onMainActionClick()">ابدأ الرهان</button>
+    </div>
+  </div>
+
+  <script>
+    // مضاعفات اللعبة وعدد التفاح الفاسد في كل صف
+    const LEVELS = [
+      { mult: 1.23, bad: 1 },
+      { mult: 1.54, bad: 1 },
+      { mult: 1.93, bad: 1 },
+      { mult: 2.41, bad: 1 },
+      { mult: 4.02, bad: 2 },
+      { mult: 6.71, bad: 2 },
+      { mult: 11.18, bad: 2 },
+      { mult: 27.97, bad: 3 },
+      { mult: 69.93, bad: 3 },
+      { mult: 349.68, bad: 4 }
+    ];
+
+    let userMoney = 1000.00;
+    let currentStake = 0;
+    let currentRowIndex = 0;
+    let isPlaying = false;
+    let syncedMatrix = [];
+
+    // خوارزمية استخراج التوزيع العشوائي المطابق للـ ID
+    function getSeededRandom(seed) {
+      let x = Math.sin(seed++) * 10000;
+      return x - Math.floor(x);
+    }
+
+    function generateMatrixFromID(idStr) {
+      // تحويل نص الـ ID إلى رقم
+      let seedNumber = 0;
+      for (let i = 0; i < idStr.length; i++) {
+        seedNumber = (seedNumber << 5) - seedNumber + idStr.charCodeAt(i);
+        seedNumber |= 0;
+      }
+      seedNumber = Math.abs(seedNumber) || 32856808;
+
+      let matrix = [];
+      LEVELS.forEach(lvl => {
+        let row = [true, true, true, true, true];
+        let placedBad = 0;
+        while (placedBad < lvl.bad) {
+          let pos = Math.floor(getSeededRandom(seedNumber++) * 5);
+          if (row[pos] !== false) {
+            row[pos] = false;
+            placedBad++;
+          }
+        }
+        matrix.push(row);
+      });
+      return matrix;
+    }
+
+    // بناء الواجهة للشبكة
+    function buildGameBoard() {
+      const grid = document.getElementById('gameGrid');
+      grid.innerHTML = '';
+
+      LEVELS.forEach((lvl, rIdx) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.id = `grid-row-${rIdx}`;
+
+        const cellsWrap = document.createElement('div');
+        cellsWrap.className = 'cells-wrap';
+
+        for (let cIdx = 0; cIdx < 5; cIdx++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.onclick = () => onSelectApple(rIdx, cIdx);
+          cellsWrap.appendChild(cell);
+        }
+
+        const badge = document.createElement('div');
+        badge.className = 'multiplier-badge';
+        badge.innerText = `x${lvl.mult}`;
+
+        row.appendChild(cellsWrap);
+        row.appendChild(badge);
+        grid.appendChild(row);
+      });
+    }
+
+    // زر الرهان الرئيسي
+    function onMainActionClick() {
+      const btn = document.getElementById('mainGameBtn');
+
+      if (!isPlaying) {
+        const stake = parseFloat(document.getElementById('stakeInput').value);
+        if (isNaN(stake) || stake <= 0 || stake > userMoney) {
+          alert("الرصيد غير كافٍ أو قيمة الرهان غير صحيحة!");
+          return;
+        }
+
+        userMoney -= stake;
+        currentStake = stake;
+        updateBalanceUI();
+
+        // ربط الخريطة الحالية بنفس رقم الـ ID
+        const idVal = document.getElementById('targetId').value.trim();
+        syncedMatrix = generateMatrixFromID(idVal);
+
+        isPlaying = true;
+        currentRowIndex = 0;
+        buildGameBoard();
+
+        document.getElementById('targetId').disabled = true;
+        document.getElementById('stakeInput').disabled = true;
+        document.getElementById(`grid-row-0`).classList.add('active');
+
+        btn.innerText = "سحب الأرباح (0 ج.م)";
+        btn.className = "btn-action cashout";
+        btn.disabled = true;
+        document.getElementById('statusMessage').innerText = "اختر التفاحة السليمة كما في الاسكربت!";
+      } else {
+        // سحب الأرباح (كاش أوت)
+        const profit = currentStake * LEVELS[currentRowIndex - 1].mult;
+        userMoney += profit;
+        updateBalanceUI();
+        document.getElementById('statusMessage').innerText = `مبروك! تم سحب ${profit.toFixed(2)} ج.م 🎉`;
+        finishRound();
+      }
+    }
+
+    // عند الضغط على تفاحة
+    function onSelectApple(rIdx, cIdx) {
+      if (!isPlaying || rIdx !== currentRowIndex) return;
+
+      const rowEl = document.getElementById(`grid-row-${rIdx}`);
+      const cellEl = rowEl.querySelectorAll('.cell')[cIdx];
+      const isGood = syncedMatrix[rIdx][cIdx];
+
+      if (isGood) {
+        // تفاحة سليمة
+        cellEl.innerText = "🍏";
+        cellEl.classList.add('good');
+        rowEl.classList.remove('active');
+        rowEl.classList.add('cleared');
+
+        const currentWin = (currentStake * LEVELS[currentRowIndex].mult).toFixed(2);
+        const btn = document.getElementById('mainGameBtn');
+        btn.disabled = false;
+        btn.innerText = `سحب الأرباح (${currentWin} ج.م)`;
+
+        currentRowIndex++;
+        if (currentRowIndex >= LEVELS.length) {
+          onMainActionClick(); // الفوز بآخر دور وسحب المبلغ تلقائياً
+        } else {
+          document.getElementById(`grid-row-${currentRowIndex}`).classList.add('active');
+          document.getElementById('statusMessage').innerText = `ممتاز! انتقل للصف ${currentRowIndex + 1}`;
+        }
+      } else {
+        // تفاحة فاسدة
+        cellEl.innerText = "🍎";
+        cellEl.classList.add('bad');
+
+        // إظهار باقي الصف
+        syncedMatrix[rIdx].forEach((val, i) => {
+          const c = rowEl.querySelectorAll('.cell')[i];
+          c.innerText = val ? "🍏" : "🍎";
+          c.classList.add(val ? 'good' : 'bad');
+        });
+
+        document.getElementById('statusMessage').innerText = "للأسف تفاحة فاسدة! خسرت الرهان.";
+        finishRound();
+      }
+    }
+
+    function finishRound() {
+      isPlaying = false;
+      document.getElementById('targetId').disabled = false;
+      document.getElementById('stakeInput').disabled = false;
+      const btn = document.getElementById('mainGameBtn');
+      btn.innerText = "ابدأ الرهان";
+      btn.className = "btn-action start";
+      btn.disabled = false;
+      document.querySelectorAll('.row').forEach(r => r.classList.remove('active'));
+    }
+
+    function updateBalanceUI() {
+      document.getElementById('userBalance').innerText = userMoney.toFixed(2);
+    }
+
+    buildGameBoard();
+  </script>
+</body>
+</html>
